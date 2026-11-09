@@ -15,6 +15,11 @@ export async function qnaOverview(db:SupabaseClient,ownerId:string,batchId?:stri
  if(active){const [one,all]=await Promise.all([db.from('qna_batch_overview').select('*').eq('id',active).eq('owner_id',ownerId).maybeSingle(),db.from('qna_items').select('*').eq('batch_id',active).eq('owner_id',ownerId).order('ordinal')]);qnaDbError(one.error);qnaDbError(all.error);if(!one.data)throw new AppError('Kumpulan Q&A tidak ditemukan.',404);batch=one.data;items=all.data||[]}
  return {products:products.data||[],batches:batches.data||[],batch,items};
 }
+export async function qnaProgress(db:SupabaseClient,ownerId:string,batchId:string){
+ const [one,all]=await Promise.all([db.from('qna_batch_overview').select('*').eq('id',batchId).eq('owner_id',ownerId).maybeSingle(),db.from('qna_items').select('*').eq('batch_id',batchId).eq('owner_id',ownerId).order('ordinal')]);
+ qnaDbError(one.error);qnaDbError(all.error);if(!one.data)throw new AppError('Kumpulan Q&A tidak ditemukan.',404);
+ return {batch:one.data,items:all.data||[]};
+}
 export async function processQna(batchId:string,ownerId:string){
  const db=adminClient();const [{data:batch,error},{data:key,error:keyError}]=await Promise.all([
   db.from('qna_batches').select('knowledge_snapshot').eq('id',batchId).eq('owner_id',ownerId).maybeSingle(),
