@@ -1,0 +1,3 @@
+import {z} from 'zod';import {getIdentity,safeError} from '@/lib/api';import {qnaOverview} from '@/lib/qna/service';import {answerWorkbook} from '@/lib/qna/excel';
+export const runtime='nodejs';
+export async function GET(request:Request){try{const {db,user}=await getIdentity();const batchId=z.uuid().parse(new URL(request.url).searchParams.get('batchId'));const data=await qnaOverview(db,user.id,batchId);const bytes=await answerWorkbook(data.batch,data.items as any);return new Response(bytes,{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':'attachment; filename="adsyscript-qna.xlsx"','Cache-Control':'private, no-store'}})}catch(e){return safeError(e)}}
