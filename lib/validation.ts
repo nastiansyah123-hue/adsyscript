@@ -6,6 +6,5 @@ export const categoryInput=z.object({roomId:id,name:z.string().trim().min(1).max
 export const topicInput=z.object({roomId:id,categoryId:id,name:z.string().trim().min(1).max(200),start:date,end:date}).refine(b=>b.end>=b.start,'Tanggal akhir harus setelah tanggal awal.');
 export const roomUpdate=z.object({id,enabled:z.boolean().optional(),audience:z.string().trim().min(1).max(200).optional(),style:z.string().trim().min(1).max(200).optional(),brief:z.string().trim().max(2000).optional()});
 export const contentUpdate=z.object({id,title:z.string().trim().min(1).max(180).optional(),body:z.string().trim().min(1).max(12000).optional(),status:z.enum(['draft','ready']).optional()});
-export const scriptsSchema=z.object({contents:z.array(z.object({title:z.string().trim().min(1).max(180),body:z.string().trim().min(1).max(12000)})).min(1).max(5)});
-export function validateScripts(value:unknown,count:number){const parsed=scriptsSchema.parse(value);if(parsed.contents.length!==count||new Set(parsed.contents.map(c=>c.title.toLowerCase())).size!==count)throw new Error('Format atau jumlah naskah AI belum sesuai. Silakan coba lagi.');return parsed.contents}
+export {scriptsSchema,validateScripts} from './narrative';
 export function localDay(now=new Date()){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta'}).format(now)}
