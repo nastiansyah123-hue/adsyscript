@@ -1,0 +1,2 @@
+import {NextResponse} from 'next/server';import {sessionClient} from '@/lib/supabase/server';
+export async function GET(request:Request){const u=new URL(request.url),hash=u.searchParams.get('token_hash'),type=u.searchParams.get('type');if(hash&&(type==='signup'||type==='recovery'||type==='email')){const s=await sessionClient();const {error}=await s.auth.verifyOtp({token_hash:hash,type});if(!error)return NextResponse.redirect(new URL(type==='recovery'?'/reset-password':'/studio',u.origin))}return NextResponse.redirect(new URL('/login?error=auth',u.origin))}

@@ -1,0 +1,2 @@
+import {NextResponse} from 'next/server';import {sessionClient} from '@/lib/supabase/server';
+export async function GET(request:Request){const u=new URL(request.url),code=u.searchParams.get('code');const next=u.searchParams.get('next')==='/reset-password'?'/reset-password':'/studio';if(code){const s=await sessionClient();const {error}=await s.auth.exchangeCodeForSession(code);if(!error)return NextResponse.redirect(new URL(next,u.origin))}return NextResponse.redirect(new URL('/login?error=auth',u.origin))}
