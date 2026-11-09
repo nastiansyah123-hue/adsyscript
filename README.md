@@ -16,7 +16,7 @@ Fill `.env.local` locally or use the platform's secret settings. Do not commit s
 
 ## Supabase
 
-1. Create a Supabase project and run `supabase/migrations/202611090001_adsyscript.sql` in the SQL editor or through `supabase db push` for a linked project. The migration creates the tables, RLS policies, and transactional generation functions. The `btree_gist` extension prevents overlapping weekly focus periods.
+1. Create a Supabase project and run all files in `supabase/migrations/` in filename order in the SQL editor, or use `supabase db push` for a linked project. On an existing installation, apply only new, unapplied migrations. The migration creates the tables, RLS policies, and transactional generation functions. The `btree_gist` extension prevents overlapping weekly focus periods.
 2. Enable email/password sign-in. Keep email confirmation enabled and set a password minimum of 10 characters in Auth settings. Configure production SMTP for reliable confirmation/reset emails.
 3. Set the Auth Site URL to your exact Vercel production origin. Add these redirect URLs: `https://YOUR_DOMAIN/auth/callback`, `https://YOUR_DOMAIN/auth/callback?next=/reset-password`, and `https://YOUR_DOMAIN/auth/confirm`. Add equivalent localhost URLs for local development only.
 4. The default confirmation URL can use the PKCE callback. For token-hash templates, use `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup` for signup and `type=recovery` for reset. The callback only permits `/studio` or `/reset-password`, preventing arbitrary redirects.
@@ -71,3 +71,13 @@ npm run build
 ```
 
 Tests execute the actual SQL migration on an embedded PostgreSQL engine (PGlite), including row-level security, cross-account foreign keys, weekly overlap rejection, atomic category creation, generation leases/quotas, and retention. Separate tests cover encryption tampering, Cron authorization, timezone boundaries, and input/AI validation. Production Supabase auth/email and Vercel Cron still require deployment verification with real connected projects.
+
+## Q&A Produk
+
+Q&A is independent of the daily script quota and its 30-day retention. Configure products in **Pengaturan → Product Knowledge**, then use **Q&A Produk** for one question, pasted lines, or an `.xlsx` import (maximum 4 MB). A batch accepts 1–200 questions. The import previews sheet, column, first data row, and optional first-paragraph extraction for editorial plans containing old answers. Old answer text is not treated as product knowledge.
+
+Each batch freezes the selected product knowledge version and stores progress before calling OpenAI. The page processes three questions at a time. It can continue while another menu is open, but closing the page stops dispatching new chunks; reopen the batch and choose **Lanjutkan** to resume. Existing in-flight work may still complete. PostgreSQL leases prevent stale requests from overwriting newer work. Failed questions can be retried without regenerating completed answers. API usage is charged to the current account's stored OpenAI key.
+
+Answers use conversational text without expression tags and include supporting product-knowledge excerpts in a separate evidence field. Missing information, unsupported numbers, or individual medical suitability are marked **Perlu konfirmasi**. Users can edit, confirm, copy, and export question/answer pairs with statuses to Excel. This checks the presence of supporting excerpts; it does not independently establish the truth of product claims. There is no automatic publication of Q&A answers.
+
+Existing installations must run `supabase/migrations/202611100001_qna.sql` once before using Q&A. Do not replay the original migration. No new environment variables are required. See `UPDATE-QNA.md` for upload steps.
