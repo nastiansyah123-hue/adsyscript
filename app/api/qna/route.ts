@@ -1,7 +1,7 @@
 import {z} from 'zod';import {getIdentity,json,safeError} from '@/lib/api';import {AppError} from '@/lib/generate';
-import {batchInput,productInput} from '@/lib/qna/core';import {processQna,qnaDbError,qnaOverview} from '@/lib/qna/service';
+import {batchInput,productInput} from '@/lib/qna/core';import {processQna,qnaDbError,qnaOverview,qnaProgress} from '@/lib/qna/service';
 export const runtime='nodejs';export const maxDuration=180;
-export async function GET(request:Request){try{const {db,user}=await getIdentity();const raw=new URL(request.url).searchParams.get('batchId');const batchId=raw?z.uuid().parse(raw):undefined;return json(await qnaOverview(db,user.id,batchId))}catch(e){return safeError(e)}}
+export async function GET(request:Request){try{const {db,user}=await getIdentity();const params=new URL(request.url).searchParams;const raw=params.get('batchId');const batchId=raw?z.uuid().parse(raw):undefined;return json(params.get('progress')==='1'&&batchId?await qnaProgress(db,user.id,batchId):await qnaOverview(db,user.id,batchId))}catch(e){return safeError(e)}}
 export async function POST(request:Request){try{const {db,user}=await getIdentity();if(request.headers.get('origin')!==new URL(request.url).origin)throw new AppError('Origin tidak diizinkan.',403);const raw=await request.text();if(raw.length>1000000)throw new AppError('Data terlalu besar.',413);let body;try{body=JSON.parse(raw)}catch{throw new AppError('Data tidak valid.')}
  switch(body.action){
   case 'product-save':{const {id,...product}=productInput.parse(body.product);const query=id?db.from('products').update(product).eq('id',id).eq('owner_id',user.id):db.from('products').insert({...product,owner_id:user.id});const {data,error}=await query.select('id').single();qnaDbError(error);return json({ok:true,id:data?.id})}
