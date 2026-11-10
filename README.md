@@ -46,7 +46,7 @@ Set `NEXT_PUBLIC_*` variables before building; Next.js embeds them in the browse
 4. Vercel Cron in `vercel.json` invokes `/api/cron` daily at `00:00 UTC` (07:00 WIB / Asia/Jakarta). Vercel supplies `Authorization: Bearer CRON_SECRET`. Cron must also be enabled/supported by the Vercel project/plan. Hobby scheduling may run within its permitted daily time window rather than at the exact minute. No hourly or per-user time setting is advertised.
 5. Verify `/api/cron` with its authorization header from a secure client, read the returned results and persisted jobs, then enable `AUTOMATION_ENABLED=true` and redeploy. Enable the desired workrooms in each account. Do not put a secret in the URL, browser, repository, or CI logs. If Vercel Deployment Protection blocks internal calls, configure its automation bypass secret as `VERCEL_AUTOMATION_BYPASS_SECRET`.
 
-Each workroom runs in a separate authenticated Vercel Function. PostgreSQL leases and a commit transaction ensure concurrent/manual retries cannot exceed 5 scripts per theme/day. Failed jobs can be retried manually. Cron and workers require the server secret. Plan duration/concurrency and OpenAI rate limits still apply; inspect failed jobs/logs when scaling to many accounts.
+Each workroom runs in a separate authenticated Vercel Function. Automatic runs fill a minimum of 5 scripts per theme/day. Manual requests can add 1–5 scripts per request after the target is met. Stable request IDs prevent duplicate writes when retrying the same manual request, while shared room leases avoid overlapping workers. Failed jobs can be retried manually. Cron and workers require the server secret. Plan duration/concurrency and OpenAI rate limits still apply; inspect failed jobs/logs when scaling to many accounts.
 
 ## Archive retention
 
@@ -81,3 +81,7 @@ Each batch freezes the selected product knowledge version and stores progress be
 Answers use conversational text without expression tags and include supporting product-knowledge excerpts in a separate evidence field. Missing information, unsupported numbers, or individual medical suitability are marked **Perlu konfirmasi**. Users can edit, confirm, copy, and export question/answer pairs with statuses to Excel. This checks the presence of supporting excerpts; it does not independently establish the truth of product claims. There is no automatic publication of Q&A answers.
 
 Existing installations must run `supabase/migrations/202611100001_qna.sql` once before using Q&A. Do not replay the original migration. No new environment variables are required. See `UPDATE-QNA.md` for upload steps.
+
+## Additional manual scripts
+
+Apply `supabase/migrations/202611100002_manual_content.sql` on existing installations, then deploy the updated application. **Tambah konten** creates 1–5 additional scripts per explicit request, with no total daily maximum. Repeating a completed request ID does not create duplicates. Automatic Cron still fills only the daily minimum of five, counting scripts already made manually. Archives retain all scripts from the last 30 days; 30 is a duration, not a count limit. **Simpan perubahan** updates an existing title/body; generated scripts are already saved automatically. See `UPDATE-CONTENT.md`.
