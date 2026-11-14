@@ -85,3 +85,13 @@ Existing installations must run `supabase/migrations/202611100001_qna.sql` once 
 ## Additional manual scripts
 
 Apply `supabase/migrations/202611100002_manual_content.sql` on existing installations, then deploy the updated application. **Tambah konten** creates 1–5 additional scripts per explicit request, with no total daily maximum. Repeating a completed request ID does not create duplicates. Automatic Cron still fills only the daily minimum of five, counting scripts already made manually. Archives retain all scripts from the last 30 days; 30 is a duration, not a count limit. **Simpan perubahan** updates an existing title/body; generated scripts are already saved automatically. See `UPDATE-CONTENT.md`.
+
+Archive and workroom script views group saved scripts by their generation date, with visible totals and expandable day sections. Repeated manual requests append to the same day's section. A new generation date opens its own section while the previous date remains accessible. This uses the existing `contents.day` field; no additional archive migration is needed.
+
+## Used-script checkboxes
+
+Apply `supabase/migrations/202611100003_content_usage.sql` once on an existing installation, then deploy the updated code. Each script has a persisted `used` boolean, independent of draft/ready state. Checkboxes in the card and editor save immediately. Workroom and archive filters support all/unused/used scripts; filters do not delete records. Existing scripts default to unchecked. The migration grants only the new column's update permission and preserves owner-based RLS and 30-day retention. See `UPDATE-USAGE.md`.
+
+### Komentar TikTok → Q&A
+
+Submenu Q&A → Komentar TikTok mengambil komentar video publik melalui Apify, default 100 komentar. Hubungkan token Apify milik masing-masing akun di Pengaturan, pilih komentar dan produk, lalu buat jawaban. Jalankan migrasi `202611140001_tiktok.sql` setelah migrasi Q&A. Tidak perlu env baru di Vercel. Petunjuk lengkap ada di [UPDATE-TIKTOK.md](UPDATE-TIKTOK.md).
