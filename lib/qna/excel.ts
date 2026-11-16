@@ -1,3 +1,4 @@
+import {videoUrl} from '../tiktok/core';
 import ExcelJS from 'exceljs';import {unzipSync} from 'fflate';
 export type ImportSheet={name:string;columns:{index:number;label:string}[];rows:{rowNumber:number;values:string[]}[];headerRow:number;suggestedColumn:number;suggestedFirstRow:number;suggestedFirstParagraph:boolean};
 function cellText(value:ExcelJS.CellValue):string{
@@ -32,11 +33,19 @@ export function extractQuestions(sheet:ImportSheet,column:number,firstRow:number
  }).filter(Boolean);
 }
 const labels:Record<string,string>={pending:'Belum diproses',processing:'Sedang diproses',done:'Selesai',needs_review:'Perlu konfirmasi',failed:'Gagal'};
-export async function answerWorkbook(batch:{title:string;product_name:string},items:{ordinal:number;question:string;answer:string;status:string;review_reason?:string;error?:string|null;evidence?:{field:string;quote:string}[]}[]){
+export async function answerWorkbook(batch:{title:string;product_name:string},items:{ordinal:number;question:string;answer:string;status:string;review_reason?:string;error?:string|null;evidence?:{field:string;quote:string}[];tiktok_username?:string|null;tiktok_comment_id?:string|null}[],sourceVideoUrl?:string,sourceComments?:{text:string;author:string}[]){
+ let source='';if(sourceVideoUrl){try{source=videoUrl(sourceVideoUrl)}catch{}}
  const workbook=new ExcelJS.Workbook();workbook.creator='adsyscript';const sheet=workbook.addWorksheet('Q&A Talent',{views:[{state:'frozen',ySplit:1}]});
  sheet.columns=[{header:'No',key:'ordinal',width:7},{header:'Produk',key:'product',width:24},{header:'Pertanyaan',key:'question',width:55},{header:'Jawaban Talent',key:'answer',width:80},{header:'Status',key:'status',width:22},{header:'Catatan',key:'note',width:50},{header:'Dasar Product Knowledge',key:'evidence',width:70}];
- for(const item of [...items].sort((a,b)=>a.ordinal-b.ordinal))sheet.addRow({ordinal:item.ordinal,product:batch.product_name,question:String(item.question),answer:String(item.answer||''),status:labels[item.status]||item.status,note:item.error||item.review_reason||'',evidence:(item.evidence||[]).map(e=>e.field+': '+e.quote).join('\n')});
+ if(source)sheet.columns=[...sheet.columns.map(c=>({header:c.header,key:c.key,width:c.width})),{header:'Link video TikTok',key:'tiktok_url',width:65},{header:'Username TikTok',key:'tiktok_username',width:28}];
+ for(const item of [...items].sort((a,b)=>a.ordinal-b.ordinal))sheet.addRow({ordinal:item.ordinal,product:batch.product_name,question:String(item.question),answer:String(item.answer||''),status:labels[item.status]||item.status,note:item.error||item.review_reason||'',evidence:(item.evidence||[]).map(e=>e.field+': '+e.quote).join('\n'),...(source?{tiktok_url:{text:source,hyperlink:source},tiktok_username:exportTikTokUsername(item,sourceComments)}:{})});
  sheet.getRow(1).font={bold:true,color:{argb:'FFFFFFFF'},size:12};sheet.getRow(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF273C31'}};sheet.getRow(1).height=28;
- sheet.eachRow((row,n)=>{row.alignment={vertical:'top',wrapText:true};if(n>1)row.font={size:12}});sheet.autoFilter={from:'A1',to:'G1'};
+ sheet.eachRow((row,n)=>{row.alignment={vertical:'top',wrapText:true};if(n>1)row.font={size:12}});sheet.autoFilter={from:'A1',to:source?'I1':'G1'};
  return new Uint8Array(await workbook.xlsx.writeBuffer());
+}
+
+export function exportTikTokUsername(item:{question:string;tiktok_username?:string|null;tiktok_comment_id?:string|null},comments?:{text:string;author:string}[]){
+ if(item.tiktok_comment_id)return item.tiktok_username?'@'+item.tiktok_username.replace(/^@/,''):'';
+ const authors=new Set((comments||[]).filter(c=>c.text===item.question).map(c=>c.author));
+ const author=authors.size===1?[...authors][0]:'';return author?'@'+author.replace(/^@/,''):'';
 }
